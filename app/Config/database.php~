@@ -1,0 +1,13 @@
+<?php
+class DATABASE_CONFIG {
+
+	public $default = array(
+		'datasource' => 'Database/Mysql',
+		'persistent' => false,
+		'host' => 'localhost',
+		'login' => 'vsilva',
+		'password' => 'vsilva2014',
+		'database' => 'vocacion',
+		'encoding' => 'utf8'
+	);
+}

@@ -1,0 +1,375 @@
+<?php
+App::uses('AppController', 'Controller');
+/**
+ * Users Controller
+ *
+ * @property User $User
+ * @property PaginatorComponent $Paginator
+ * @property SessionComponent $Session
+ */
+class UsersController extends AppController {
+
+/**
+ * Components
+ *
+ * @var array
+ */
+	public $components = array('Paginator', 'Session');
+	var $helpers = array('Js');
+
+	public $uses = array('User', 'Career','Answer','Question');
+
+
+///////////////////////////////////////////////////////////////
+	public function beforeFilter() {
+		parent::beforeFilter();
+		$this->Auth->allow('login', 'admin_add');
+	}
+//////////////////////////////////////////////////////////////
+
+
+	public function login() {
+		$this->layout= 'page';
+
+		// echo AuthComponent::password('admin');
+
+		if ($this->request->is('post')) {
+			if($this->Auth->login()) {
+
+				$this->User->id = $this->Auth->user('id');
+				$this->User->saveField('logins', $this->Auth->user('logins') + 1);
+				$this->User->saveField('last_login', date('Y-m-d H:i:s'));
+
+			if($this->Auth->user('role_id') == '1') {
+					return $this->redirect(array(
+						'controller' => 'users',
+						'action' => 'dashboard',
+						'manager' => false,
+						'admin' => true
+					));
+				} else {
+					$this->Session->setFlash('Login is incorrect');
+				}
+			} else {
+				$this->Session->setFlash('Login is incorrect');
+			}
+		}
+	}
+
+////////////////////////////////////////////////////////////
+
+	public function logout() {
+		$this->Session->setFlash('Good-Bye');
+		return $this->redirect($this->Auth->logout());
+	}
+
+////////////////////////////////////////////////////////////
+
+	public function admin_dashboard() {
+	}
+
+////////////////////////////////////////////////////////////	
+
+	public function kmeans(){
+
+
+		$this->layout = 'page';
+		$this->User->recursive = 0;
+		$users = $this->User->find('all', array('conditions'=>"User.role_id = 2"));
+
+		$string = "";
+		 foreach ($users as $user): 
+
+
+			if($string == ""){
+
+				$string = $user['User']['active_style'].",".$user['User']['reflexive_style'].",".$user['User']['theorist_style'].",".$user['User']['pragmatic_style'];
+			}else{
+
+				$string = $string.",".$user['User']['active_style'].",".$user['User']['reflexive_style'].",".$user['User']['theorist_style'].",".$user['User']['pragmatic_style'];
+
+			}
+
+			//$string = $string.",".
+
+		endforeach;
+
+			$result = shell_exec("java -jar hello.jar $string");
+
+			$parts = explode("   ", $result);
+
+
+		for($i = 1; $i<(count($parts)); $i++){
+
+			$posts[] = array((double)$parts[$i], (double)$parts[$i+1]);
+
+			$i++;
+
+		}
+
+			$json = json_encode($posts);
+
+		$this->set(compact('result','posts'));
+    
+    	$this->set(compact('json'));
+	
+	}
+
+
+
+ public function change_image($id = null) {
+ 	$this->layout= 'page';
+	if ($this->User->exists($id)) {
+      		if (($this->request->is('post') || $this->request->is('put')) && !empty($this->request->data['User']['image']['name'])) 
+		{
+	
+		//Consulto los datos que no serán editados para hacer la comparación de código	
+		$options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
+		$user = $this->User->find('first', $options);
+	
+		if($user['User']['img_code'] == $this->request->data['User']['code']){
+
+		      $this->Img = $this->Components->load('Img');
+
+		      $newName = $user['User']['rut'];
+
+		      $ext = $this->Img->ext($this->request->data['User']['image']['name']);
+
+		      $origFile = $newName . '.' . $ext;
+		      $dst = $newName . '.jpg';
+
+		      $targetdir = WWW_ROOT . 'images/users';
+
+		      $upload = $this->Img->upload($this->request->data['User']['image']['tmp_name'], $targetdir, $origFile);
+
+		   	if($upload == 'Success') {
+						$user['User']['image'] = $origFile;
+					} else {
+						$user['User']['image'] = 'user3.jpg';
+					}
+		      
+		      //$this->User->create();
+		      
+		      if ($this->User->save($user)) {
+			//$this->Session->setFlash(__('Usuario Agregado.'));
+			return $this->redirect('/users/resume/'.$id);
+		      } else {
+			$this->Session->setFlash(__('El usuario no se pudo agregar. Por favor intente nuevamente'));
+		      }
+	}else{
+		
+		 $options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
+     		 $this->request->data = $this->User->find('first', $options);
+      		 $this->set('user', $this->User->find('first', $options));
+		$this->Session->setFlash(__('Código ingresado inválido'));
+		}
+
+	
+    	}
+	 else 
+	{ 
+	     $options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
+	      $this->request->data = $this->User->find('first', $options);
+	      $this->set('user', $this->User->find('first', $options));
+	    }
+
+	}else {
+		 $this->redirect('/users/collaborators');
+		} 
+ 
+	
+}
+
+	function random() {
+		$time_start = microtime(true);
+
+
+
+		for($i=0; $i < 10000; $i++){
+
+		$active = rand(8, 20);
+		$reflexive = rand(8, 20);
+		$theorist = rand(8, 20);
+		$pragmatic = rand(8, 20);
+
+		$career = rand(2, 26);
+
+		$gender = rand(2,3);
+
+
+		$this->User->create();
+
+		$this->request->data['User']['role_id'] = 2;
+
+		$this->request->data['User']['active_style'] = $active;
+	    $this->request->data['User']['reflexive_style'] = $reflexive;
+	    $this->request->data['User']['theorist_style'] = $theorist;
+	    $this->request->data['User']['pragmatic_style'] = $pragmatic;
+	    $this->request->data['User']['careers_id'] = $career;
+
+	     $this->request->data['User']['gender_id'] = $gender; 
+	
+		$this->User->save($this->request->data);
+	
+	}
+	$time_end = microtime(true);
+	$time = $time_start-$time_end ;
+
+	$this->set(compact('time'));
+	}
+
+	 function addLike($id ) {
+                //$id = $_POST['id'];
+		$this->User->addLike($id);
+              echo json_encode(array(
+            'number' => 1));
+       exit();  
+
+      }
+
+
+
+
+	public function collaborators() {
+		$this->layout = 'page';
+		$this->User->recursive = 0;
+		$this->set('users', $this->Paginator->paginate(array(
+            'role_id' => 2,
+        
+    )));
+
+
+
+	}
+
+	public function public_resume($user_id) {
+		
+	$this->layout = 'page';	
+    $this->User->recursive = 0;
+	$options = array('conditions' => array('User.' . $this->User->primaryKey => $user_id));
+	$this->set('user', $this->User->find('first', $options));
+
+		$careers = $this->User->Career->find('list');
+		$this->set(compact('careers'));
+	}
+
+	public function prev_resume($user_id)
+	{
+		$this->autoRender = false;
+		$this->User->addView($user_id);
+		$this->redirect('/users/public_resume/'.$user_id);
+
+	}
+
+
+	 /**
+ * admin_index method
+ *
+ * @return void
+ */
+	public function resume($user_id) {
+		
+	$this->layout = 'page';	
+
+	$options = array('conditions' => array('User.' . $this->User->primaryKey => $user_id));
+	$this->set('user', $this->User->find('first', $options));
+	}
+
+		
+
+/**
+ * admin_index method
+ *
+ * @return void
+ */
+	public function admin_index() {
+		$this->User->recursive = 0;
+		$this->Paginator = $this->Components->load('Paginator');
+		$this->set('users', $this->Paginator->paginate());
+	}
+
+/**
+ * admin_view method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function admin_view($id = null) {
+		if (!$this->User->exists($id)) {
+			throw new NotFoundException(__('Invalid user'));
+		}
+		$options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
+		$this->set('user', $this->User->find('first', $options));
+	}
+
+/**
+ * admin_add method
+ *
+ * @return void
+ */
+	public function admin_add() {
+		$this->Session->setFlash(__('The user could not be saved. Please, try again.'));
+		if ($this->request->is('post')) {
+			$this->User->create();
+			if ($this->User->save($this->request->data)) {
+				$this->Session->setFlash(__('The user has been saved.'));
+				return $this->redirect(array('action' => 'index'));
+			} else {
+				$this->Session->setFlash(__('The user could not be saved. Please, try again.'));
+			}
+		}
+		$genders = $this->User->Gender->find('list');
+		$careers = $this->User->Career->find('list');
+		$roles = $this->User->Role->find('list');
+		$this->set(compact('genders', 'careers', 'roles'));
+	}
+
+/**
+ * admin_edit method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function admin_edit($id = null) {
+		if (!$this->User->exists($id)) {
+			throw new NotFoundException(__('Invalid user'));
+		}
+		if ($this->request->is(array('post', 'put'))) {
+			if ($this->User->save($this->request->data)) {
+				$this->Session->setFlash(__('The user has been saved.'));
+				return $this->redirect(array('action' => 'index'));
+			} else {
+				$this->Session->setFlash(__('The user could not be saved. Please, try again.'));
+			}
+		} else {
+			$options = array('conditions' => array('User.' . $this->User->primaryKey => $id));
+			$this->request->data = $this->User->find('first', $options);
+		}
+		$genders = $this->User->Gender->find('list');
+		$careers = $this->User->Career->find('list');
+		$roles = $this->User->Role->find('list');
+		$this->set(compact('genders', 'careers', 'roles'));
+	}
+
+/**
+ * admin_delete method
+ *
+ * @throws NotFoundException
+ * @param string $id
+ * @return void
+ */
+	public function admin_delete($id = null) {
+		$this->User->id = $id;
+		if (!$this->User->exists()) {
+			throw new NotFoundException(__('Invalid user'));
+		}
+		$this->request->onlyAllow('post', 'delete');
+		if ($this->User->delete()) {
+			$this->Session->setFlash(__('The user has been deleted.'));
+		} else {
+			$this->Session->setFlash(__('The user could not be deleted. Please, try again.'));
+		}
+		return $this->redirect(array('action' => 'index'));
+	}}
